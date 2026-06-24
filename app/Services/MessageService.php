@@ -7,6 +7,7 @@ use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\User;
 use App\Repositories\Contracts\MessageRepositoryInterface;
+use App\Support\BroadcastsSafely;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -39,7 +40,7 @@ class MessageService
             $conversation->update(['last_message_at' => now()]);
 
             $message->load('sender');
-            broadcast(new MessageSent($message))->toOthers();
+            BroadcastsSafely::toOthers(new MessageSent($message));
 
             return $message;
         });

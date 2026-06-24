@@ -33,6 +33,7 @@ class UserNotificationService
                 'connection_request_id' => $request->id,
                 'sender_id' => $request->sender_id,
             ],
+            sendTelegram: false,
         );
     }
 
@@ -173,6 +174,7 @@ class UserNotificationService
         string $title,
         string $body,
         ?array $payload = null,
+        bool $sendTelegram = true,
     ): void {
         if (! $user) {
             return;
@@ -190,7 +192,8 @@ class UserNotificationService
         ]);
 
         if (
-            $user->telegram_chat_id
+            $sendTelegram
+            && $user->telegram_chat_id
             && $user->telegram_notify_enabled
             && $this->telegramNotifications->isConfigured()
         ) {

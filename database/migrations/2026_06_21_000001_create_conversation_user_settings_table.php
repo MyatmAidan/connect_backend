@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('conversation_user_settings')) {
+            return;
+        }
+
         Schema::create('conversation_user_settings', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->foreignUlid('user_id')->constrained()->cascadeOnDelete();

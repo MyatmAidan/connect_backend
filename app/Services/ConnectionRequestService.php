@@ -3,12 +3,14 @@
 namespace App\Services;
 
 use App\Enums\ConnectionRequestStatus;
+use App\Events\FriendRequestSent;
 use App\Models\Connection;
 use App\Models\ConnectionRequest;
 use App\Models\Conversation;
 use App\Models\User;
 use App\Repositories\Contracts\ConnectionRequestRepositoryInterface;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Validation\ValidationException;
 
 class ConnectionRequestService
@@ -74,12 +76,20 @@ class ConnectionRequestService
 
         $this->notifications->connectionRequestReceived($request);
 
+        Event::dispatch(new FriendRequestSent($request));
+
         return $request;
     }
 
     public function accept(ConnectionRequest $request, User $user): Connection
     {
         $this->assertReceiver($request, $user);
+
+        if ($request->status !== ConnectionRequestStatus::Pending) {
+            throw ValidationException::withMessages([
+                'request' => ['This request is no longer pending.'],
+            ]);
+        }
 
         $connection = DB::transaction(function () use ($request) {
             $this->requests->update($request, ['status' => ConnectionRequestStatus::Accepted->value]);
@@ -105,6 +115,13 @@ class ConnectionRequestService
     public function reject(ConnectionRequest $request, User $user): ConnectionRequest
     {
         $this->assertReceiver($request, $user);
+
+        if ($request->status !== ConnectionRequestStatus::Pending) {
+            throw ValidationException::withMessages([
+                'request' => ['This request is no longer pending.'],
+            ]);
+        }
+
         $this->requests->update($request, ['status' => ConnectionRequestStatus::Rejected->value]);
 
         return $request->fresh(['sender', 'receiver']);

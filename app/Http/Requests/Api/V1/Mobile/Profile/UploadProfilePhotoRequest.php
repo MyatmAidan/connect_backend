@@ -14,7 +14,7 @@ class UploadProfilePhotoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'photo' => ['required', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:5120'],
+            'photo' => ['required', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:10240'],
         ];
     }
 }

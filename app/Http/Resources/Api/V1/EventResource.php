@@ -19,7 +19,7 @@ class EventResource extends JsonResource
             'title' => $this->title,
             'section' => $this->section,
             'event_date' => $this->event_date,
-            'photo' => $this->photo,
+            'photo' => $this->normalizeStorageUrl($this->photo),
             'meeting_url' => $this->meeting_url,
             'display_order' => $this->display_order,
             'creator' => UserResource::make($this->whenLoaded('creator')),
@@ -34,6 +34,23 @@ class EventResource extends JsonResource
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];
+    }
+
+    private function normalizeStorageUrl(?string $value): ?string
+    {
+        if (! $value) {
+            return null;
+        }
+
+        if (str_starts_with($value, '/storage/')) {
+            return $value;
+        }
+
+        $path = parse_url($value, PHP_URL_PATH);
+
+        return is_string($path) && str_starts_with($path, '/storage/')
+            ? $path
+            : $value;
     }
 
     private function myRegistrationFor(Request $request, ?\App\Models\User $user): ?EventRegistration

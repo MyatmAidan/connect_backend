@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Services\TelegramCallbackService;
+use App\Services\TelegramUpdateDeduplicator;
 use App\Services\TelegramUpdateService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
@@ -16,8 +18,11 @@ class TelegramPollCommand extends Command
 
     private int $offset = 0;
 
-    public function __construct(private readonly TelegramUpdateService $telegramUpdates)
-    {
+    public function __construct(
+        private readonly TelegramUpdateService $telegramUpdates,
+        private readonly TelegramCallbackService $telegramCallbacks,
+        private readonly TelegramUpdateDeduplicator $telegramDedup,
+    ) {
         parent::__construct();
     }
 
@@ -47,7 +52,7 @@ class TelegramPollCommand extends Command
                 [
                     'offset' => $this->offset,
                     'timeout' => $timeout,
-                    'allowed_updates' => json_encode(['message']),
+                    'allowed_updates' => json_encode(['message', 'callback_query']),
                 ],
             );
 
@@ -73,11 +78,20 @@ class TelegramPollCommand extends Command
                 $updateId = $update['update_id'] ?? null;
                 if (is_int($updateId)) {
                     $this->offset = $updateId + 1;
+
+                    if ($this->telegramDedup->alreadyProcessed($updateId)) {
+                        continue;
+                    }
                 }
 
                 $message = $update['message'] ?? null;
                 if (is_array($message)) {
                     $this->telegramUpdates->processMessage($message);
+                }
+
+                $callbackQuery = $update['callback_query'] ?? null;
+                if (is_array($callbackQuery)) {
+                    $this->telegramCallbacks->processCallbackQuery($callbackQuery);
                 }
             }
         }

@@ -30,4 +30,8 @@ return [
         'webhook_url' => env('TELEGRAM_WEBHOOK_URL'),
     ],
 
+    'mobile_app' => [
+        'url' => env('MOBILE_APP_URL', 'http://localhost:5173'),
+    ],
+
 ];

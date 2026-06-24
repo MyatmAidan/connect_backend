@@ -128,6 +128,6 @@ class EventService
 
     private function publicStorageUrl(string $path): string
     {
-        return rtrim(config('app.url'), '/').'/storage/'.$path;
+        return '/storage/'.$path;
     }
 }

@@ -46,4 +46,31 @@ class TelegramUrl
         return in_array(strtolower($host), $localHosts, true)
             || str_ends_with(strtolower($host), '.local');
     }
+
+    /** Telegram rejects localhost / non-https URLs on inline keyboard buttons. */
+    public static function isInlineButtonUrl(?string $url): bool
+    {
+        if (! is_string($url) || $url === '') {
+            return false;
+        }
+
+        if (! str_starts_with($url, 'https://')) {
+            return false;
+        }
+
+        return ! self::isLocalHost($url);
+    }
+
+    public static function mobileAppPath(string $path): ?string
+    {
+        $base = config('services.mobile_app.url');
+
+        if (! is_string($base) || $base === '') {
+            return null;
+        }
+
+        $url = rtrim($base, '/').'/'.ltrim($path, '/');
+
+        return self::isInlineButtonUrl($url) ? $url : null;
+    }
 }

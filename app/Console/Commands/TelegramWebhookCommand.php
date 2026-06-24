@@ -111,7 +111,9 @@ class TelegramWebhookCommand extends Command
             $payload['secret_token'] = $secret;
         }
 
-        $response = Http::post("https://api.telegram.org/bot{$token}/setWebhook", $payload);
+        $payload['allowed_updates'] = ['message', 'callback_query'];
+
+        $response = Http::asJson()->post("https://api.telegram.org/bot{$token}/setWebhook", $payload);
         $body = $response->json();
 
         if (! ($body['ok'] ?? false)) {
