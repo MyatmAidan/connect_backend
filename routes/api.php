@@ -266,6 +266,7 @@ Route::prefix('v1')->group(function () {
             Route::put('/jobs/{job}', [CompanyJobController::class, 'update']);
             Route::post('/jobs/{job}/publish', [CompanyJobController::class, 'publish']);
             Route::post('/jobs/{job}/close', [CompanyJobController::class, 'close']);
+            Route::post('/jobs/{job}/reopen', [CompanyJobController::class, 'reopen']);
             Route::delete('/jobs/{job}', [CompanyJobController::class, 'destroy']);
 
             Route::get('/job-applications', [CompanyJobApplicationController::class, 'index']);

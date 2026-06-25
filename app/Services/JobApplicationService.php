@@ -14,8 +14,6 @@ use Illuminate\Validation\ValidationException;
 
 class JobApplicationService
 {
-    private const INTERVIEW_ACK_MESSAGE = 'Thank you for your Cv.I will contact you again if you are selected for an interview.';
-
     public function __construct(private readonly TelegramNotificationService $telegramNotifications) {}
 
     public function apply(User $user, Job $job, ?string $coverLetter = null): JobApplication
@@ -136,7 +134,7 @@ class JobApplicationService
         return $this->show($application);
     }
 
-    public function sendInterviewAcknowledgment(JobApplication $application): JobApplication
+    public function sendInterviewAcknowledgment(JobApplication $application, ?string $message = null): JobApplication
     {
         $application->loadMissing('applicant', 'job.companyProfile');
         $applicant = $application->applicant;
@@ -159,13 +157,20 @@ class JobApplicationService
             ]);
         }
 
+        $body = trim((string) ($message ?: config('services.telegram.interview_ack_message')));
+        if ($body === '') {
+            throw ValidationException::withMessages([
+                'message' => ['Acknowledgment message cannot be empty.'],
+            ]);
+        }
+
         $companyName = $application->job?->companyProfile?->company_name ?? 'The company';
         $jobTitle = $application->job?->title ?? 'your application';
 
         $log = $this->telegramNotifications->sendToUser(
             $applicant,
             "{$companyName} — {$jobTitle}",
-            self::INTERVIEW_ACK_MESSAGE,
+            $body,
             'job_interview_ack',
         );
 

@@ -172,6 +172,22 @@ class JobService
         return $job->fresh(['companyProfile.company', 'category']);
     }
 
+    public function reopen(Job $job): Job
+    {
+        if ($job->status !== JobStatus::Closed) {
+            throw ValidationException::withMessages([
+                'job' => ['Only closed jobs can be reopened.'],
+            ]);
+        }
+
+        $job->update([
+            'status' => JobStatus::Open,
+            'published_at' => now(),
+        ]);
+
+        return $job->fresh(['companyProfile.company', 'category']);
+    }
+
     public function delete(Job $job): void
     {
         $job->delete();

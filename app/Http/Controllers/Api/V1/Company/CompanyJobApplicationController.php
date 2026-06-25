@@ -65,7 +65,14 @@ class CompanyJobApplicationController extends Controller
     {
         $this->authorizeApplication($request, $jobApplication);
 
-        $updated = $this->applications->sendInterviewAcknowledgment($jobApplication);
+        $data = $request->validate([
+            'message' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $updated = $this->applications->sendInterviewAcknowledgment(
+            $jobApplication,
+            $data['message'] ?? null,
+        );
 
         return ApiResponse::success(new JobApplicationResource($updated), 'Interview acknowledgment sent via Telegram.');
     }

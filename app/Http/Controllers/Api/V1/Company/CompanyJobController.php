@@ -106,6 +106,13 @@ class CompanyJobController extends Controller
         return ApiResponse::success(new JobResource($this->jobs->close($job)), 'Job closed.');
     }
 
+    public function reopen(Request $request, Job $job)
+    {
+        $this->authorizeJob($request, $job);
+
+        return ApiResponse::success(new JobResource($this->jobs->reopen($job)), 'Job reopened.');
+    }
+
     public function destroy(Request $request, Job $job)
     {
         $this->authorizeJob($request, $job);

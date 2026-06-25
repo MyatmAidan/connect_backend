@@ -28,6 +28,10 @@ return [
         'webhook_secret' => env('TELEGRAM_WEBHOOK_SECRET'),
         // Public HTTPS base URL for webhook registration (defaults to APP_URL).
         'webhook_url' => env('TELEGRAM_WEBHOOK_URL'),
+        'interview_ack_message' => env(
+            'TELEGRAM_INTERVIEW_ACK_MESSAGE',
+            'Thank you for your Cv.I will contact you again if you are selected for an interview.',
+        ),
     ],
 
     'mobile_app' => [

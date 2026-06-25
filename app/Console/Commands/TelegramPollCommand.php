@@ -6,7 +6,9 @@ use App\Services\TelegramCallbackService;
 use App\Services\TelegramUpdateDeduplicator;
 use App\Services\TelegramUpdateService;
 use Illuminate\Console\Command;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
+use Throwable;
 
 class TelegramPollCommand extends Command
 {
@@ -47,52 +49,64 @@ class TelegramPollCommand extends Command
         $this->line('Keep this running while you develop — no Cloudflare tunnel needed.');
 
         while (true) {
-            $response = Http::timeout($timeout + 10)->get(
-                "https://api.telegram.org/bot{$token}/getUpdates",
-                [
-                    'offset' => $this->offset,
-                    'timeout' => $timeout,
-                    'allowed_updates' => json_encode(['message', 'callback_query']),
-                ],
-            );
+            try {
+                $response = Http::connectTimeout(15)
+                    ->timeout($timeout + 20)
+                    ->get(
+                        "https://api.telegram.org/bot{$token}/getUpdates",
+                        [
+                            'offset' => $this->offset,
+                            'timeout' => $timeout,
+                            'allowed_updates' => json_encode(['message', 'callback_query']),
+                        ],
+                    );
 
-            if (! $response->successful()) {
-                $this->warn('getUpdates failed: '.$response->body());
-                sleep(3);
+                if (! $response->successful()) {
+                    $this->warn('getUpdates failed: '.$response->body());
+                    sleep(3);
 
-                continue;
-            }
-
-            $updates = $response->json('result', []);
-            if (! is_array($updates)) {
-                sleep(1);
-
-                continue;
-            }
-
-            foreach ($updates as $update) {
-                if (! is_array($update)) {
                     continue;
                 }
 
-                $updateId = $update['update_id'] ?? null;
-                if (is_int($updateId)) {
-                    $this->offset = $updateId + 1;
+                $updates = $response->json('result', []);
+                if (! is_array($updates)) {
+                    sleep(1);
 
-                    if ($this->telegramDedup->alreadyProcessed($updateId)) {
+                    continue;
+                }
+
+                foreach ($updates as $update) {
+                    if (! is_array($update)) {
                         continue;
                     }
-                }
 
-                $message = $update['message'] ?? null;
-                if (is_array($message)) {
-                    $this->telegramUpdates->processMessage($message);
-                }
+                    $updateId = $update['update_id'] ?? null;
+                    if (is_int($updateId)) {
+                        $this->offset = $updateId + 1;
 
-                $callbackQuery = $update['callback_query'] ?? null;
-                if (is_array($callbackQuery)) {
-                    $this->telegramCallbacks->processCallbackQuery($callbackQuery);
+                        if ($this->telegramDedup->alreadyProcessed($updateId)) {
+                            continue;
+                        }
+                    }
+
+                    $message = $update['message'] ?? null;
+                    if (is_array($message)) {
+                        $this->telegramUpdates->processMessage($message);
+                    }
+
+                    $callbackQuery = $update['callback_query'] ?? null;
+                    if (is_array($callbackQuery)) {
+                        $this->telegramCallbacks->processCallbackQuery($callbackQuery);
+                    }
                 }
+            } catch (ConnectionException $exception) {
+                $this->warn('Telegram connection lost: '.$exception->getMessage());
+                $this->line('Reconnecting in 3 seconds...');
+                sleep(3);
+            } catch (Throwable $exception) {
+                $this->warn('Telegram polling error: '.$exception->getMessage());
+                $this->line('Retrying in 3 seconds...');
+                sleep(3);
             }
         }
     }
