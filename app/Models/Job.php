@@ -58,4 +58,17 @@ class Job extends Model
     {
         return $this->hasMany(JobApplication::class, 'job_posting_id');
     }
+
+    public function isAcceptingApplications(): bool
+    {
+        if ($this->status !== JobStatus::Open) {
+            return false;
+        }
+
+        if ($this->closes_at && $this->closes_at->isPast()) {
+            return false;
+        }
+
+        return true;
+    }
 }

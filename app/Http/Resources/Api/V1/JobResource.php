@@ -37,6 +37,7 @@ class JobResource extends JsonResource
             'status' => $this->status,
             'published_at' => $this->published_at,
             'closes_at' => $this->closes_at,
+            'can_apply' => $this->isAcceptingApplications(),
             'company_profile' => CompanyProfileResource::make($this->whenLoaded('companyProfile')),
             'applications_count' => $this->when(isset($this->applications_count), $this->applications_count),
             'has_applied' => $this->when($user instanceof User, (bool) ($this->has_applied ?? $myApplication)),

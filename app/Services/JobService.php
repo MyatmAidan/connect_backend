@@ -116,19 +116,26 @@ class JobService
             ]);
         }
 
+        $payload = collect($data)->only([
+            'category_id',
+            'title',
+            'description',
+            'requirements',
+            'employment_type',
+            'experience_level',
+            'location',
+            'salary_min',
+            'salary_max',
+            'salary_currency',
+            'closes_at',
+        ])->toArray();
+
+        if (! empty($payload['closes_at'])) {
+            $payload['closes_at'] = \Carbon\Carbon::parse($payload['closes_at'])->endOfDay();
+        }
+
         $job = $company->jobs()->create([
-            ...collect($data)->only([
-                'category_id',
-                'title',
-                'description',
-                'requirements',
-                'employment_type',
-                'experience_level',
-                'location',
-                'salary_min',
-                'salary_max',
-                'salary_currency',
-            ])->toArray(),
+            ...$payload,
             'status' => $data['status'] ?? JobStatus::Draft,
         ]);
 
@@ -137,7 +144,7 @@ class JobService
 
     public function update(Job $job, array $data): Job
     {
-        $job->update(collect($data)->only([
+        $payload = collect($data)->only([
             'category_id',
             'title',
             'description',
@@ -150,7 +157,13 @@ class JobService
             'salary_currency',
             'status',
             'closes_at',
-        ])->filter(fn($value) => $value !== null)->toArray());
+        ])->filter(fn($value) => $value !== null)->toArray();
+
+        if (array_key_exists('closes_at', $payload) && ! empty($payload['closes_at'])) {
+            $payload['closes_at'] = \Carbon\Carbon::parse($payload['closes_at'])->endOfDay();
+        }
+
+        $job->update($payload);
 
         return $job->fresh(['companyProfile.company', 'category']);
     }

@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Enums\JobApplicationStatus;
-use App\Enums\JobStatus;
 use App\Models\Company;
 use App\Models\CompanyProfile;
 use App\Models\Job;
@@ -19,9 +18,11 @@ class JobApplicationService
     public function apply(User $user, Job $job, ?string $coverLetter = null): JobApplication
     {
 
-        if ($job->status !== JobStatus::Open) {
+        if (! $job->isAcceptingApplications()) {
             throw ValidationException::withMessages([
-                'job' => ['This job is not accepting applications.'],
+                'job' => [$job->closes_at && $job->closes_at->isPast()
+                    ? 'The application deadline for this job has passed.'
+                    : 'This job is not accepting applications.'],
             ]);
         }
 

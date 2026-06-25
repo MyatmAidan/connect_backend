@@ -55,6 +55,7 @@ class CompanyJobController extends Controller
             'salary_min' => ['nullable', 'integer', 'min:0'],
             'salary_max' => ['nullable', 'integer', 'min:0'],
             'salary_currency' => ['nullable', 'string', 'size:3'],
+            'closes_at' => ['nullable', 'date', 'after:now'],
         ]);
 
         $job = $this->jobs->create($company, $data);
@@ -84,7 +85,25 @@ class CompanyJobController extends Controller
             'salary_min' => ['nullable', 'integer', 'min:0'],
             'salary_max' => ['nullable', 'integer', 'min:0'],
             'salary_currency' => ['nullable', 'string', 'size:3'],
-            'closes_at' => ['nullable', 'date'],
+            'closes_at' => [
+                'nullable',
+                'date',
+                function (string $attribute, mixed $value, \Closure $fail) use ($job): void {
+                    if (! $value) {
+                        return;
+                    }
+
+                    $incoming = \Carbon\Carbon::parse($value);
+                    if (! $incoming->isPast()) {
+                        return;
+                    }
+
+                    $existing = $job->closes_at?->format('Y-m-d H:i:s');
+                    if ($existing !== $incoming->format('Y-m-d H:i:s')) {
+                        $fail('The application deadline must be in the future.');
+                    }
+                },
+            ],
         ]);
 
         $updated = $this->jobs->update($job, $data);
